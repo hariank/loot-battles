@@ -57,10 +57,14 @@ contract LootBattler is Context, Ownable {
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
+  // map of loot ids to whether they are in use or not
+  mapping(unit256 => bool) private _activeByLootIdMap;
+
   // open challenges
   struct Challenge {
-    address challengerLoot;
-    uint256 wager;
+    address challengerAddress;
+    uint256 lootId;
+    uint256 wagerAmount;
   }
   Challenge[] private challenges;
 
@@ -72,22 +76,59 @@ contract LootBattler is Context, Ownable {
     return _balances[account];
   }
 
-  // - check if caller owns loot, enough agld
-  // - escrow the agld
   function createChallenge(uint256 challengerLootId, uint256 wagerAmount)
     external
   {
-    // TODO
+    // TODO: Check if challenger owns loot
+    // TODO: Check if challenger has enough AGLD
+    // TODO: Mark loot as active and add to pending challenges
   }
 
-  // - check if caller owns loot, enough agld
-  // - run the battle
-  // 	- update balances
-  // 	- send cut to contract
-  function acceptChallenge(uint256 accepterLootId, uint256 challengeId)
-    external
+  function acceptChallenge(
+    uint256 accepterLootID,
+    address challengerAddress,
+    uint256 challengerLootId
+  ) external {
+    // TODO: Fetch challenge if exists
+    // TODO: Compute wager amount for challenger
+    // TODO: Check if accepter owns loot and has enough to wager
+    // TODO: Execute battle
+    // TODO: Settle
+  }
+
+  // Battles the two loots and returns the id of the loot winner
+  function battle(uint256 challengerLootId, uint256 accepterLootId)
+    internal
+    pure
+    returns (uint256)
   {
-    require(challengeId < challenges.length, "Challenge ID invalid");
-    // TODO
+    uint256 challengerLootPower = computeLootPower(challengerLootId);
+    uint256 accepterLootPower = computeLootPower(accepterLootId);
+
+    // TODO: Figure out actual challenge logic
+    return challengerLootPower >= accepterLootPower;
+  }
+
+  function computeLootPower(uint256 lootId) internal pure returns (unit256) {
+    // TODO: Given the address of a loot, compute the total power of that loot.
+    return 0;
+  }
+
+  function userOwnsLoot(address userAddress, uint256 lootId)
+    internal
+    pure
+    returns (bool)
+  {
+    // TODO: Given the address of a loot, check if the user owns it.
+    return true;
+  }
+
+  function userHasWagerAmount(address userAddress, uint256 wagerAmount)
+    internal
+    pure
+    returns (bool)
+  {
+    // TODO: Given a wager amount, check if the user has enough AGLD.
+    return true;
   }
 }
