@@ -5,14 +5,21 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-import { ethers } from "ethers";
+import { task } from "hardhat/config";
+import { ethers } from "hardhat";
 import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.0",
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.RPC_URL_MAINNET,
+        blockNumber: 13153335,
+      },
+    },
     testnet: {
       url: process.env.RPC_URL_TESTNET,
       accounts: [`0x${process.env.PRIVATE_KEY}`],

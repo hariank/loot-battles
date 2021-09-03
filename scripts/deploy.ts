@@ -15,9 +15,12 @@ async function main() {
   console.log("Deployer:", deployer.address);
   console.log("Deployer balance:", (await deployer.getBalance()).toString());
 
-  const cf: ContractFactory = await ethers.getContractFactory("LootBattler");
-  const c: Contract = await cf.deploy(constants.LOOT_COMPONENTS_ADDR);
-  await c.deployed();
+  const c: Contract = await utils.deployContractFromCompiled(
+    "LootBattler",
+    constants.LOOT_MAIN_ADDR,
+    constants.LOOT_COMPONENTS_ADDR,
+    constants.AGLD_ADDR,
+  );
   console.log("Contract deployed to:", c.address);
 }
 

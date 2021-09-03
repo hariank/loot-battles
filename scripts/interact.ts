@@ -9,7 +9,7 @@ async function main() {
   // if only readonly txes can use a provider instead
   const [signer] = await ethers.getSigners();
 
-  let lootContract = await utils.contractFromCompiled(
+  let lootContract = utils.contractFromCompiled(
     constants.LOOT_MAIN_ADDR,
     "Loot"
   );
