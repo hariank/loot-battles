@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
@@ -69,7 +70,6 @@ contract LootBattler is Context, Ownable {
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
-  // Official loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
   constructor(
     address _lootContractAddress,
     address _agldTokenAddress,
@@ -82,6 +82,10 @@ contract LootBattler is Context, Ownable {
 
   function balanceOf(address account) public view returns (uint256) {
     return _balances[account];
+  }
+
+  function claimFunds(uint256 amount) external {
+    _releaseFunds(_msgSender(), amount);
   }
 
   /// @notice Creates a challenge for the user but first checks that they own the loot, have enough of the token,
@@ -104,6 +108,8 @@ contract LootBattler is Context, Ownable {
     // Mark challenger's loot id as active.
     _activeByLootIdMap[challengerLootId] = true;
 
+    _escrowFunds(_msgSender(), wagerAmount);
+
     _challenges.push(
       Challenge({
         challengerAddress: _msgSender(),
@@ -111,8 +117,6 @@ contract LootBattler is Context, Ownable {
         wagerAmount: wagerAmount
       })
     );
-
-    // TODO: Transfer money from user to escrow
   }
 
   /// @notice Lets a user accept a pending challenge and first verifies that the state is valid (users own enough
@@ -228,8 +232,17 @@ contract LootBattler is Context, Ownable {
     }
     _challenges.pop();
     delete _activeByLootIdMap[lootId];
+  }
 
-    // TODO: Transfer money back to user
+  function _escrowFunds(address wagerer, uint256 amount) internal {
+    agldContract.transferFrom(wagerer, address(this), amount);
+    _balances[wagerer] += amount;
+  }
+
+  function _releaseFunds(address claimer, uint256 amount) internal {
+    require(_balances[claimer] >= amount);
+    agldContract.transferFrom(address(this), claimer, amount);
+    _balances[claimer] -= amount;
   }
 
   /// @notice Computes the power of both opponents' loot items and executes a random function that determines the

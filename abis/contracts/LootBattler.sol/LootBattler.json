@@ -98,6 +98,19 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimFunds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "challengerLootId",
         "type": "uint256"
       },
@@ -108,6 +121,19 @@
       }
     ],
     "name": "createChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "lootId",
+        "type": "uint256"
+      }
+    ],
+    "name": "deleteChallenge",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
