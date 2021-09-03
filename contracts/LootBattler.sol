@@ -8,6 +8,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 interface ILootComponents {
   function weaponComponents(uint256 tokenId)
@@ -52,13 +53,14 @@ interface ILootComponents {
 }
 
 contract LootBattler is Context, Ownable {
+  IERC721Enumerable public lootContract;
   ILootComponents public lootComponents;
 
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
   // map of loot ids to whether they are in use or not
-  mapping(unit256 => bool) private _activeByLootIdMap;
+  mapping(uint256 => bool) private _activeByLootIdMap;
 
   // open challenges
   struct Challenge {
@@ -68,7 +70,11 @@ contract LootBattler is Context, Ownable {
   }
   Challenge[] private challenges;
 
-  constructor(address _lootComponentsAddress) {
+  // Official loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
+  constructor(address _lootContractAddress, address _lootComponentsAddress)
+    Ownable()
+  {
+    lootContract = IERC721Enumerable(_lootContractAddress);
     lootComponents = ILootComponents(_lootComponentsAddress);
   }
 
@@ -106,21 +112,24 @@ contract LootBattler is Context, Ownable {
     uint256 accepterLootPower = computeLootPower(accepterLootId);
 
     // TODO: Figure out actual challenge logic
-    return challengerLootPower >= accepterLootPower;
+    return
+      challengerLootPower >= accepterLootPower
+        ? challengerLootId
+        : accepterLootId;
   }
 
-  function computeLootPower(uint256 lootId) internal pure returns (unit256) {
+  function computeLootPower(uint256 lootId) internal pure returns (uint256) {
     // TODO: Given the address of a loot, compute the total power of that loot.
     return 0;
   }
 
   function userOwnsLoot(address userAddress, uint256 lootId)
     internal
-    pure
+    view
     returns (bool)
   {
     // TODO: Given the address of a loot, check if the user owns it.
-    return true;
+    return userAddress == lootContract.ownerOf(lootId);
   }
 
   function userHasWagerAmount(address userAddress, uint256 wagerAmount)
