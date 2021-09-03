@@ -56,11 +56,14 @@ contract LootBattler is Ownable {
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
+  // map of loot ids to whether they are in use or not
+  mapping(unit256 => bool) private _activeByLootIdMap;
+
   // open challenges
   struct Challenge {
-    address challengerId;
-    address lootId;
-    uint256 wager;
+    address challengerAddress;
+    uint256 lootId;
+    uint256 wagerAmount;
   }
   Challenge[] private challenges;
 
@@ -72,22 +75,20 @@ contract LootBattler is Ownable {
     return _balances[account];
   }
 
-  function createChallenge(
-    uint256 challengerId,
-    uint256 challengerLootId,
-    uint256 wagerAmount
-  ) external {
+  function createChallenge(uint256 challengerLootId, uint256 wagerAmount)
+    external
+  {
     // TODO: Check if challenger owns loot
     // TODO: Check if challenger has enough AGLD
+    // TODO: Mark loot as active and add to pending challenges
   }
 
   function acceptChallenge(
-    uint256 accepterId,
-    uint256 accepterLootId,
-    uint256 challengeId
+    uint256 accepterLootID,
+    address challengeAddress,
+    uint256 challengerLootId
   ) external {
-    require(challengeId < challenges.length, "Challenge ID invalid");
-
+    // TODO: Fetch challenge if exists
     // TODO: Compute wager amount for challenger
     // TODO: Check if accepter owns loot and has enough to wager
     // TODO: Execute battle
@@ -112,7 +113,7 @@ contract LootBattler is Ownable {
     return 0;
   }
 
-  function userOwnsLoot(uint256 userId, uint256 lootId)
+  function userOwnsLoot(address userAddress, uint256 lootId)
     internal
     pure
     returns (bool)
@@ -121,7 +122,7 @@ contract LootBattler is Ownable {
     return true;
   }
 
-  function userHasWagerAmount(uint256 userId, uint256 wagerAmount)
+  function userHasWagerAmount(address userAddress, uint256 wagerAmount)
     internal
     pure
     returns (bool)
