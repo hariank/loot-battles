@@ -85,7 +85,7 @@ contract LootBattler is Ownable {
 
   function acceptChallenge(
     uint256 accepterLootID,
-    address challengeAddress,
+    address challengerAddress,
     uint256 challengerLootId
   ) external {
     // TODO: Fetch challenge if exists
