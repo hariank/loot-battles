@@ -53,9 +53,6 @@ interface ILootComponents {
 }
 
 contract LootBattler is Context, Ownable {
-  // Loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
-  address public lootContractAddress =
-    0xFF9C1b15B16263C61d017ee9F65C50e4AE0113D7;
   IERC721Enumerable public lootContract;
   ILootComponents public lootComponents;
 
@@ -73,6 +70,7 @@ contract LootBattler is Context, Ownable {
   }
   Challenge[] private challenges;
 
+  // Official loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
   constructor(address _lootContractAddress, address _lootComponentsAddress)
     Ownable()
   {
