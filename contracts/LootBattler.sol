@@ -72,20 +72,15 @@ contract LootBattler is Ownable {
     return _balances[account];
   }
 
-  // - check if caller owns loot, enough agld
-  // - escrow the agld
   function createChallenge(
     uint256 challengerId,
     uint256 challengerLootId,
     uint256 wagerAmount
   ) external {
-    // TODO
+    // TODO: Check if challenger owns loot
+    // TODO: Check if challenger has enough AGLD
   }
 
-  // - check if caller owns loot, enough agld
-  // - run the battle
-  // 	- update balances
-  // 	- send cut to contract
   function acceptChallenge(
     uint256 accepterId,
     uint256 accepterLootId,
@@ -112,26 +107,26 @@ contract LootBattler is Ownable {
     return challengerLootPower >= accepterLootPower;
   }
 
-  // Given the address of a loot, it computes the total power of that loot collection.
   function computeLootPower(uint256 lootId) internal pure returns (unit256) {
+    // TODO: Given the address of a loot, compute the total power of that loot.
     return 0;
   }
 
-  // Check if challenger owns the loot
-  function challengerOwnsLoot(uint256 challengerId, uint256 lootId)
+  function userOwnsLoot(uint256 userId, uint256 lootId)
     internal
     pure
     returns (bool)
   {
+    // TODO: Given the address of a loot, check if the user owns it.
     return true;
   }
 
-  // Check if challenger has enough gold to wager
-  function challengerOwnsWagerAmount(uint256 challengerId, uint256 wagerAmount)
+  function userHasWagerAmount(uint256 userId, uint256 wagerAmount)
     internal
     pure
     returns (bool)
   {
+    // TODO: Given a wager amount, check if the user has enough AGLD.
     return true;
   }
 }
