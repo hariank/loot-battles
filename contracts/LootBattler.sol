@@ -7,6 +7,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
 interface ILootComponents {
   function weaponComponents(uint256 tokenId)
@@ -50,7 +51,7 @@ interface ILootComponents {
     returns (uint256[5] memory);
 }
 
-contract LootBattler is Ownable {
+contract LootBattler is Context, Ownable {
   ILootComponents public lootComponents;
 
   // deposits and winnings
