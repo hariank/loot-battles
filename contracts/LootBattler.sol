@@ -124,7 +124,77 @@ contract LootBattler is Context, Ownable {
     address challengerAddress,
     uint256 challengerLootId
   ) external {
-    // TODO: Fill out function logic
+    require(_userOwnsLoot(_msgSender(), accepterLootID), "MUST_OWN_LOOT");
+    require(
+      _activeByLootIdMap[accepterLootID] != true,
+      "LOOT_MUST_NOT_BE_ACTIVE"
+    );
+
+    // Find the challenge if it exists
+    Challenge memory challenge;
+    bool foundChallenge = false;
+    uint256 challengeIdx;
+    uint256 challengesSize = _challenges.length;
+    for (uint256 i = 0; i < challengesSize; i++) {
+      challenge = _challenges[i];
+      if (
+        challenge.challengerAddress == challengerAddress &&
+        challenge.lootId == challengerLootId
+      ) {
+        challengeIdx = i;
+        foundChallenge = true;
+        break;
+      }
+    }
+    require(foundChallenge, "NO_EXISTING_CHALLENGE");
+
+    // Run validation checks on original challenger again
+    require(
+      _userOwnsLoot(challenge.challengerAddress, challenge.lootId),
+      "MUST_OWN_LOOT"
+    );
+    require(
+      _userHasWagerAmount(challenge.challengerAddress, challenge.wagerAmount),
+      "CHALLENGER_MUST_OWN_ENOUGH_TOKENS"
+    );
+    require(
+      _activeByLootIdMap[challenge.lootId] != true,
+      "LOOT_MUST_NOT_BE_ACTIVE"
+    );
+
+    // Run validation checks on person accepting the challenge
+    uint256 accepterWagerAmount = challenge.wagerAmount * 1;
+    require(
+      _userHasWagerAmount(challenge.challengerAddress, accepterWagerAmount),
+      "MUST_OWN_ENOUGH_TOKENS"
+    );
+
+    // Mark accepter's loot as active
+    _activeByLootIdMap[accepterLootID] = true;
+
+    uint256 winningLootId = _battle(challenge.lootId, accepterLootID);
+    address winnerAddress;
+    address loserAddress;
+    uint256 winnings;
+    if (winningLootId == challenge.lootId) {
+      winnerAddress = challenge.challengerAddress;
+      loserAddress = _msgSender();
+      winnings = challenge.wagerAmount;
+    } else {
+      winnerAddress = _msgSender();
+      loserAddress = challenge.challengerAddress;
+      winnings = accepterWagerAmount;
+    }
+
+    // TODO: Transfer money from loser to the winner
+
+    // Delete challenge and mark loots as inactive
+    if (challengeIdx < challengesSize - 1) {
+      _challenges[challengeIdx] = _challenges[challengesSize - 1];
+    }
+    _challenges.pop();
+    delete _activeByLootIdMap[challenge.lootId];
+    delete _activeByLootIdMap[accepterLootID];
   }
 
   /// @notice Computes the power of both opponents' loot items and executes a random function that determines the
