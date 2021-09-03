@@ -6,6 +6,7 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
@@ -54,6 +55,7 @@ interface ILootComponents {
 
 contract LootBattler is Context, Ownable {
   IERC721Enumerable public lootContract;
+  IERC20 public agldContract;
   ILootComponents public lootComponents;
 
   // deposits and winnings
@@ -71,10 +73,13 @@ contract LootBattler is Context, Ownable {
   Challenge[] private challenges;
 
   // Official loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
-  constructor(address _lootContractAddress, address _lootComponentsAddress)
-    Ownable()
-  {
+  constructor(
+    address _lootContractAddress,
+    address _agldTokenAddress,
+    address _lootComponentsAddress
+  ) Ownable() {
     lootContract = IERC721Enumerable(_lootContractAddress);
+    agldContract = IERC20(_agldTokenAddress);
     lootComponents = ILootComponents(_lootComponentsAddress);
   }
 
@@ -123,21 +128,25 @@ contract LootBattler is Context, Ownable {
     return 0;
   }
 
+  /// @notice Checks if the user in the battle with the loot actually owns it
+  /// @param userAddress The address of the user in the challenge
+  /// @param lootId The id of the loot the user is wagering
   function userOwnsLoot(address userAddress, uint256 lootId)
     internal
     view
     returns (bool)
   {
-    // TODO: Given the address of a loot, check if the user owns it.
     return userAddress == lootContract.ownerOf(lootId);
   }
 
+  /// @notice Checks if the user wagering a certain amount of AGLD actually has enough to go through
+  /// @param userAddress The address of the user in the challenge
+  /// @param wagerAmount The amount of AGLD tokens the user is wagering
   function userHasWagerAmount(address userAddress, uint256 wagerAmount)
     internal
-    pure
+    view
     returns (bool)
   {
-    // TODO: Given a wager amount, check if the user has enough AGLD.
-    return true;
+    return agldContract.balanceOf(userAddress) >= wagerAmount;
   }
 }
