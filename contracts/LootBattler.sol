@@ -54,19 +54,20 @@ contract LootBattler is Context, Ownable {
   IERC20 public agldContract;
   ILootComponents public lootComponents;
 
-  // deposits and winnings
-  mapping(address => uint256) private _balances;
-
-  // map of loot ids to whether they are in use or not
-  mapping(uint256 => bool) private _activeByLootIdMap;
-
-  // open challenges
   struct Challenge {
     address challengerAddress;
     uint256 lootId;
     uint256 wagerAmount;
   }
-  Challenge[] private challenges;
+
+  // open challenges
+  Challenge[] private _challenges;
+
+  // map of loot ids to whether they are in use or not
+  mapping(uint256 => bool) private _activeByLootIdMap;
+
+  // deposits and winnings
+  mapping(address => uint256) private _balances;
 
   // Official loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
   constructor(
@@ -83,51 +84,79 @@ contract LootBattler is Context, Ownable {
     return _balances[account];
   }
 
+  /// @notice Creates a challenge for the user but first checks that they own the loot, have enough of the token,
+  /// and that the loot isn't currently actively being used in a challenge.
+  /// @param challengerLootId The loot id the user is using in the challenge
+  /// @param wagerAmount The amount of AGLD tokens the user is wagering
   function createChallenge(uint256 challengerLootId, uint256 wagerAmount)
     external
   {
-    // TODO: Check if challenger owns loot
-    // TODO: Check if challenger has enough AGLD
-    // TODO: Mark loot as active and add to pending challenges
+    require(_userOwnsLoot(_msgSender(), challengerLootId), "MUST_OWN_LOOT");
+    require(
+      _userHasWagerAmount(_msgSender(), wagerAmount),
+      "MUST_OWN_ENOUGH_TOKENS"
+    );
+    require(
+      _activeByLootIdMap[challengerLootId] != true,
+      "LOOT_MUST_NOT_BE_ACTIVE"
+    );
+
+    // Mark challenger's loot id as active.
+    _activeByLootIdMap[challengerLootId] = true;
+
+    _challenges.push(
+      Challenge({
+        challengerAddress: _msgSender(),
+        lootId: challengerLootId,
+        wagerAmount: wagerAmount
+      })
+    );
   }
 
+  /// @notice Lets a user accept a pending challenge and first verifies that the state is valid (users own enough
+  /// tokens, own the loot, etc). Executes the battle, determines the winner, and then transfers the earnings out.
+  /// Both challengerAddress & challengerLootId are used to find the ongoing challenge in _challenges.
+  /// @param accepterLootID The address of the user in the challenge
+  /// @param challengerAddress The address of the the challenger this user wants to fight
+  /// @param challengerLootId The id of the loot the user wants to fight
   function acceptChallenge(
     uint256 accepterLootID,
     address challengerAddress,
     uint256 challengerLootId
   ) external {
-    // TODO: Fetch challenge if exists
-    // TODO: Compute wager amount for challenger
-    // TODO: Check if accepter owns loot and has enough to wager
-    // TODO: Execute battle
-    // TODO: Settle
+    // TODO: Fill out function logic
   }
 
-  // Battles the two loots and returns the id of the loot winner
-  function battle(uint256 challengerLootId, uint256 accepterLootId)
+  /// @notice Computes the power of both opponents' loot items and executes a random function that determines the
+  /// winner of the battle. The winning loot id is returned.
+  /// @param challengerLootId The id of the loot the person who created the challenge is using
+  /// @param accepterLootId The id of the loot the person who accepted is using
+  function _battle(uint256 challengerLootId, uint256 accepterLootId)
     internal
     pure
     returns (uint256)
   {
-    uint256 challengerLootPower = computeLootPower(challengerLootId);
-    uint256 accepterLootPower = computeLootPower(accepterLootId);
+    uint256 challengerLootPower = _computeLootPower(challengerLootId);
+    uint256 accepterLootPower = _computeLootPower(accepterLootId);
 
-    // TODO: Figure out actual challenge logic
+    // TODO: Implement actual battle logic
     return
       challengerLootPower >= accepterLootPower
         ? challengerLootId
         : accepterLootId;
   }
 
-  function computeLootPower(uint256 lootId) internal pure returns (uint256) {
-    // TODO: Given the address of a loot, compute the total power of that loot.
+  /// @notice Given a lootId, this function computes the overall power of the loot that will then be used
+  /// in the battle
+  /// @param lootId The id of the loot the user is wagering
+  function _computeLootPower(uint256 lootId) internal pure returns (uint256) {
     return 0;
   }
 
   /// @notice Checks if the user in the battle with the loot actually owns it
   /// @param userAddress The address of the user in the challenge
   /// @param lootId The id of the loot the user is wagering
-  function userOwnsLoot(address userAddress, uint256 lootId)
+  function _userOwnsLoot(address userAddress, uint256 lootId)
     internal
     view
     returns (bool)
@@ -138,7 +167,7 @@ contract LootBattler is Context, Ownable {
   /// @notice Checks if the user wagering a certain amount of AGLD actually has enough to go through
   /// @param userAddress The address of the user in the challenge
   /// @param wagerAmount The amount of AGLD tokens the user is wagering
-  function userHasWagerAmount(address userAddress, uint256 wagerAmount)
+  function _userHasWagerAmount(address userAddress, uint256 wagerAmount)
     internal
     view
     returns (bool)
