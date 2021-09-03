@@ -111,6 +111,8 @@ contract LootBattler is Context, Ownable {
         wagerAmount: wagerAmount
       })
     );
+
+    // TODO: Transfer money from user to escrow
   }
 
   /// @notice Lets a user accept a pending challenge and first verifies that the state is valid (users own enough
@@ -195,6 +197,39 @@ contract LootBattler is Context, Ownable {
     _challenges.pop();
     delete _activeByLootIdMap[challenge.lootId];
     delete _activeByLootIdMap[accepterLootID];
+  }
+
+  /// @notice If a valid active challenge exists for the given sender and loot id, delete it.
+  /// @param lootId The id of the loot the user wagered
+  function deleteChallenge(uint256 lootId) external {
+    require(_userOwnsLoot(_msgSender(), lootId), "MUST_OWN_LOOT");
+    require(_activeByLootIdMap[lootId] == true, "LOOT_MUST_BE_ACTIVE");
+
+    // Find the challenge if it exists
+    Challenge memory challenge;
+    bool foundChallenge = false;
+    uint256 challengeIdx;
+    uint256 challengesSize = _challenges.length;
+    for (uint256 i = 0; i < challengesSize; i++) {
+      challenge = _challenges[i];
+      if (
+        challenge.challengerAddress == _msgSender() &&
+        challenge.lootId == lootId
+      ) {
+        challengeIdx = i;
+        foundChallenge = true;
+        break;
+      }
+    }
+    require(foundChallenge, "NO_EXISTING_CHALLENGE");
+
+    if (challengeIdx < challengesSize - 1) {
+      _challenges[challengeIdx] = _challenges[challengesSize - 1];
+    }
+    _challenges.pop();
+    delete _activeByLootIdMap[lootId];
+
+    // TODO: Transfer money back to user
   }
 
   /// @notice Computes the power of both opponents' loot items and executes a random function that determines the
