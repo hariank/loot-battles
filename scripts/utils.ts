@@ -11,7 +11,7 @@ export async function contractFromCompiled(
   contractAddr: string,
   contractName: string,
   ...args
-){
+) {
   const cf: ContractFactory = await ethers.getContractFactory(
     contractName,
     ...args
@@ -22,7 +22,7 @@ export async function contractFromCompiled(
 export async function deployContractFromCompiled(
   contractName: string,
   ...deployArgs
-){
+) {
   const cf: ContractFactory = await ethers.getContractFactory(contractName);
   const c: Contract = await cf.deploy(...deployArgs);
   await c.deployed();

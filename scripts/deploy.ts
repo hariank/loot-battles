@@ -19,7 +19,7 @@ async function main() {
     "LootBattler",
     constants.LOOT_MAIN_ADDR,
     constants.LOOT_COMPONENTS_ADDR,
-    constants.AGLD_ADDR,
+    constants.AGLD_ADDR
   );
   console.log("Contract deployed to:", c.address);
 }
