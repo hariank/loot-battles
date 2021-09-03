@@ -56,9 +56,15 @@ contract LootBattler is Ownable {
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
+  // challenger
+  struct Challenger {
+    address challengerId;
+    address lootId;
+  }
+
   // open challenges
   struct Challenge {
-    address challengerLoot;
+    Challenger challenger;
     uint256 wager;
   }
   Challenge[] private challenges;
@@ -73,9 +79,11 @@ contract LootBattler is Ownable {
 
   // - check if caller owns loot, enough agld
   // - escrow the agld
-  function createChallenge(uint256 challengerLootId, uint256 wagerAmount)
-    external
-  {
+  function createChallenge(
+    uint256 challengerId,
+    uint256 challengerLootId,
+    uint256 wagerAmount
+  ) external {
     // TODO
   }
 
@@ -83,10 +91,52 @@ contract LootBattler is Ownable {
   // - run the battle
   // 	- update balances
   // 	- send cut to contract
-  function acceptChallenge(uint256 accepterLootId, uint256 challengeId)
-    external
-  {
+  function acceptChallenge(
+    uint256 accepterId,
+    uint256 accepterLootId,
+    uint256 challengeId
+  ) external {
     require(challengeId < challenges.length, "Challenge ID invalid");
-    // TODO
+
+    // TODO: Compute wager amount for challenger
+    // TODO: Check if accepter owns loot and has enough to wager
+    // TODO: Execute battle
+    // TODO: Settle
+  }
+
+  // Battles the two loots and returns the id of the loot winner
+  function battle(uint256 challengerLootId, uint256 accepterLootId)
+    internal
+    pure
+    returns (uint256)
+  {
+    uint256 challengerLootPower = computeLootPower(challengerLootId);
+    uint256 accepterLootPower = computeLootPower(accepterLootId);
+
+    // TODO: Figure out actual challenge logic
+    return challengerLootPower >= accepterLootPower;
+  }
+
+  // Given the address of a loot, it computes the total power of that loot collection.
+  function computeLootPower(uint256 lootId) internal pure returns (unit256) {
+    return 0;
+  }
+
+  // Check if challenger owns the loot
+  function challengerOwnsLoot(uint256 challengerId, uint256 lootId)
+    internal
+    pure
+    returns (bool)
+  {
+    return true;
+  }
+
+  // Check if challenger has enough gold to wager
+  function challengerOwnsWagerAmount(uint256 challengerId, uint256 wagerAmount)
+    internal
+    pure
+    returns (bool)
+  {
+    return true;
   }
 }
