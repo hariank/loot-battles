@@ -6,8 +6,10 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 interface ILootComponents {
   function weaponComponents(uint256 tokenId)
@@ -51,7 +53,11 @@ interface ILootComponents {
     returns (uint256[5] memory);
 }
 
-contract LootBattler is Context, Ownable {
+contract LootBattler is Context, Ownable, ERC20 {
+  // Loot contract is available at https://etherscan.io/address/0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7
+  address public lootContractAddress =
+    0xFF9C1b15B16263C61d017ee9F65C50e4AE0113D7;
+  IERC721Enumerable public lootContract;
   ILootComponents public lootComponents;
 
   // deposits and winnings
@@ -67,6 +73,10 @@ contract LootBattler is Context, Ownable {
     uint256 wagerAmount;
   }
   Challenge[] private challenges;
+
+  constructor() Ownable() ERC20("Adventure Gold", "AGLD") {
+    lootContract = IERC721Enumerable(lootContractAddress);
+  }
 
   constructor(address _lootComponentsAddress) {
     lootComponents = ILootComponents(_lootComponentsAddress);
@@ -120,7 +130,7 @@ contract LootBattler is Context, Ownable {
     returns (bool)
   {
     // TODO: Given the address of a loot, check if the user owns it.
-    return true;
+    return userAddress == lootContract.ownerOf(lootId);
   }
 
   function userHasWagerAmount(address userAddress, uint256 wagerAmount)
