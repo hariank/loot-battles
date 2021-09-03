@@ -56,15 +56,10 @@ contract LootBattler is Ownable {
   // deposits and winnings
   mapping(address => uint256) private _balances;
 
-  // challenger
-  struct Challenger {
-    address challengerId;
-    address lootId;
-  }
-
   // open challenges
   struct Challenge {
-    Challenger challenger;
+    address challengerId;
+    address lootId;
     uint256 wager;
   }
   Challenge[] private challenges;
