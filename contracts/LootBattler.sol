@@ -192,7 +192,9 @@ contract LootBattler is Context, Ownable {
       winnings = accepterWagerAmount;
     }
 
-    // TODO: Transfer money from loser to the winner
+    // Transfer winnings from loser to winner
+    _balances[winnerAddress] += winnings;
+    _balances[loserAddress] -= winnings;
 
     // Delete challenge and mark loots as inactive
     if (challengeIdx < challengesSize - 1) {
@@ -234,9 +236,10 @@ contract LootBattler is Context, Ownable {
     delete _activeByLootIdMap[lootId];
   }
 
+  /// @notice Deposit user wager amount. Note that we don't update balances unless
+  //  the user deletes challenge or a battle happens
   function _escrowFunds(address wagerer, uint256 amount) internal {
     agldContract.transferFrom(wagerer, address(this), amount);
-    _balances[wagerer] += amount;
   }
 
   function _releaseFunds(address claimer, uint256 amount) internal {
