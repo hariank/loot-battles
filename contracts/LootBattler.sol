@@ -67,7 +67,7 @@ contract LootBattler is Context, Ownable {
   // map of loot ids to whether they are in use or not
   mapping(uint256 => bool) private _activeByLootIdMap;
 
-  // claimable winnings
+  // deposits and winnings
   mapping(address => uint256) private _balances;
 
   constructor(
@@ -80,11 +80,10 @@ contract LootBattler is Context, Ownable {
     lootComponents = ILootComponents(_lootComponentsAddress);
   }
 
-  function winningsBalanceOf(address account) public view returns (uint256) {
+  function balanceOf(address account) public view returns (uint256) {
     return _balances[account];
   }
 
-  /// @notice Allow caller to claim winnings
   function claimFunds(uint256 amount) external {
     _releaseFunds(_msgSender(), amount);
   }
@@ -108,6 +107,8 @@ contract LootBattler is Context, Ownable {
 
     // Mark challenger's loot id as active.
     _activeByLootIdMap[challengerLootId] = true;
+
+    _escrowFunds(_msgSender(), wagerAmount);
 
     _challenges.push(
       Challenge({
@@ -151,16 +152,23 @@ contract LootBattler is Context, Ownable {
         break;
       }
     }
-    require(foundChallenge, "NO_MATCHING_CHALLENGE");
+    require(foundChallenge, "NO_EXISTING_CHALLENGE");
 
     // Run validation checks on original challenger again
     require(
       _userOwnsLoot(challenge.challengerAddress, challenge.lootId),
       "MUST_OWN_LOOT"
     );
+    require(
+      _userHasWagerAmount(challenge.challengerAddress, challenge.wagerAmount),
+      "CHALLENGER_MUST_OWN_ENOUGH_TOKENS"
+    );
+    require(
+      _activeByLootIdMap[challenge.lootId] != true,
+      "LOOT_MUST_NOT_BE_ACTIVE"
+    );
 
     // Run validation checks on person accepting the challenge
-    // TODO: scale accepter wager amount
     uint256 accepterWagerAmount = challenge.wagerAmount * 1;
     require(
       _userHasWagerAmount(challenge.challengerAddress, accepterWagerAmount),
@@ -184,9 +192,7 @@ contract LootBattler is Context, Ownable {
       winnings = accepterWagerAmount;
     }
 
-    // record winnings
-    _balances[winnerAddress] += winnings;
-    _balances[loserAddress] -= winnings;
+    // TODO: Transfer money from loser to the winner
 
     // Delete challenge and mark loots as inactive
     if (challengeIdx < challengesSize - 1) {
@@ -225,13 +231,14 @@ contract LootBattler is Context, Ownable {
       _challenges[challengeIdx] = _challenges[challengesSize - 1];
     }
     _challenges.pop();
-
-    // return the wager to user balance and make loot inactive
-    _balances[_msgSender()] += challenge.wagerAmount;
     delete _activeByLootIdMap[lootId];
   }
 
-  /// @notice Allow claimer to claim winnings
+  function _escrowFunds(address wagerer, uint256 amount) internal {
+    agldContract.transferFrom(wagerer, address(this), amount);
+    _balances[wagerer] += amount;
+  }
+
   function _releaseFunds(address claimer, uint256 amount) internal {
     require(_balances[claimer] >= amount);
     agldContract.transferFrom(address(this), claimer, amount);
@@ -244,6 +251,7 @@ contract LootBattler is Context, Ownable {
   /// @param accepterLootId The id of the loot the person who accepted is using
   function _battle(uint256 challengerLootId, uint256 accepterLootId)
     internal
+    pure
     returns (uint256)
   {
     uint256 challengerLootPower = _computeLootPower(challengerLootId);
@@ -259,9 +267,8 @@ contract LootBattler is Context, Ownable {
   /// @notice Given a lootId, this function computes the overall power of the loot that will then be used
   /// in the battle
   /// @param lootId The id of the loot the user is wagering
-  function _computeLootPower(uint256 lootId) internal view returns (uint256) {
-    // TODO: update
-    return lootComponents.weaponComponents(lootId)[0];
+  function _computeLootPower(uint256 lootId) internal pure returns (uint256) {
+    return 0;
   }
 
   /// @notice Checks if the user in the battle with the loot actually owns it
