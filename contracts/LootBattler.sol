@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 interface ILootComponents {
@@ -50,7 +51,9 @@ interface ILootComponents {
     returns (uint256[5] memory);
 }
 
-contract LootBattler is Context, Ownable {
+contract LootBattler is Context, Ownable, ReentrancyGuard {
+  using SafeERC20 for IERC20;
+
   IERC721Enumerable public lootContract;
   IERC20 public agldContract;
   ILootComponents public lootComponents;
@@ -84,7 +87,7 @@ contract LootBattler is Context, Ownable {
     return _balances[account];
   }
 
-  function claimFunds(uint256 amount) external {
+  function claimFunds(uint256 amount) external nonReentrant {
     _releaseFunds(_msgSender(), amount);
   }
 
@@ -94,6 +97,7 @@ contract LootBattler is Context, Ownable {
   /// @param wagerAmount The amount of AGLD tokens the user is wagering
   function createChallenge(uint256 challengerLootId, uint256 wagerAmount)
     external
+    nonReentrant
   {
     require(_userOwnsLoot(_msgSender(), challengerLootId), "MUST_OWN_LOOT");
     require(
@@ -129,7 +133,7 @@ contract LootBattler is Context, Ownable {
     uint256 accepterLootID,
     address challengerAddress,
     uint256 challengerLootId
-  ) external {
+  ) external nonReentrant {
     require(_userOwnsLoot(_msgSender(), accepterLootID), "MUST_OWN_LOOT");
     require(
       _activeByLootIdMap[accepterLootID] != true,
@@ -175,9 +179,6 @@ contract LootBattler is Context, Ownable {
       "MUST_OWN_ENOUGH_TOKENS"
     );
 
-    // Mark accepter's loot as active
-    _activeByLootIdMap[accepterLootID] = true;
-
     uint256 winningLootId = _battle(challenge.lootId, accepterLootID);
     address winnerAddress;
     address loserAddress;
@@ -202,12 +203,11 @@ contract LootBattler is Context, Ownable {
     }
     _challenges.pop();
     delete _activeByLootIdMap[challenge.lootId];
-    delete _activeByLootIdMap[accepterLootID];
   }
 
   /// @notice If a valid active challenge exists for the given sender and loot id, delete it.
   /// @param lootId The id of the loot the user wagered
-  function deleteChallenge(uint256 lootId) external {
+  function deleteChallenge(uint256 lootId) external nonReentrant {
     require(_userOwnsLoot(_msgSender(), lootId), "MUST_OWN_LOOT");
     require(_activeByLootIdMap[lootId] == true, "LOOT_MUST_BE_ACTIVE");
 
@@ -233,18 +233,21 @@ contract LootBattler is Context, Ownable {
       _challenges[challengeIdx] = _challenges[challengesSize - 1];
     }
     _challenges.pop();
+
+    // return the wager to user balance and make loot inactive
+    _balances[_msgSender()] += challenge.wagerAmount;
     delete _activeByLootIdMap[lootId];
   }
 
   /// @notice Deposit user wager amount. Note that we don't update balances unless
   //  the user deletes challenge or a battle happens
   function _escrowFunds(address wagerer, uint256 amount) internal {
-    agldContract.transferFrom(wagerer, address(this), amount);
+    agldContract.safeTransferFrom(wagerer, address(this), amount);
   }
 
   function _releaseFunds(address claimer, uint256 amount) internal {
     require(_balances[claimer] >= amount);
-    agldContract.transferFrom(address(this), claimer, amount);
+    agldContract.safeTransferFrom(address(this), claimer, amount);
     _balances[claimer] -= amount;
   }
 
