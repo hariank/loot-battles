@@ -1,8 +1,7 @@
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ethers } from "hardhat";
-import { BigNumber, Contract, ContractFactory } from "ethers";
+import { BigNumber, Contract } from "ethers";
 
 import * as utils from "./utils";
 import * as constants from "./constants";
@@ -45,8 +44,8 @@ async function deployTestnet() {
   const battler: Contract = await utils.deployContractFromCompiled(
     "LootBattler",
     lootAddr,
-    lootCompAddr,
-    agldAddr
+    agldAddr,
+    lootCompAddr
   );
   console.log("LootBattler contract deployed to:", battler.address);
 }
@@ -59,8 +58,8 @@ async function deployMainnet() {
   const battler: Contract = await utils.deployContractFromCompiled(
     "LootBattler",
     constants.LOOT_MAIN_ADDR,
-    constants.LOOT_COMPONENTS_ADDR,
-    constants.AGLD_ADDR
+    constants.AGLD_ADDR,
+    constants.LOOT_COMPONENTS_ADDR
   );
   console.log("LootBattler contract deployed to:", battler.address);
 }

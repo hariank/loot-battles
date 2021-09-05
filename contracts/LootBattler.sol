@@ -70,7 +70,7 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
   // map of loot ids to whether they are in use or not
   mapping(uint256 => bool) private _activeByLootIdMap;
 
-  // deposits and winnings
+  // game balance: deposits and winnings
   mapping(address => uint256) private _balances;
 
   constructor(
@@ -87,8 +87,12 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     return _balances[account];
   }
 
+  function depositFunds(uint256 amount) external nonReentrant {
+    _depositFunds(_msgSender(), amount);
+  }
+
   function claimFunds(uint256 amount) external nonReentrant {
-    _releaseFunds(_msgSender(), amount);
+    _claimFunds(_msgSender(), amount);
   }
 
   /// @notice Creates a challenge for the user but first checks that they own the loot, have enough of the token,
@@ -101,8 +105,8 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
   {
     require(_userOwnsLoot(_msgSender(), challengerLootId), "MUST_OWN_LOOT");
     require(
-      _userHasWagerAmount(_msgSender(), wagerAmount),
-      "MUST_OWN_ENOUGH_TOKENS"
+      _userHasSufficientBalance(_msgSender(), wagerAmount),
+      "INSUFFICIENT_BALANCE"
     );
     require(
       _activeByLootIdMap[challengerLootId] != true,
@@ -112,8 +116,7 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     // Mark challenger's loot id as active.
     _activeByLootIdMap[challengerLootId] = true;
 
-    _escrowFunds(_msgSender(), wagerAmount);
-
+    // Create challenge
     _challenges.push(
       Challenge({
         challengerAddress: _msgSender(),
@@ -121,10 +124,13 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
         wagerAmount: wagerAmount
       })
     );
+
+    // Update balance
+    _balances[_msgSender()] -= wagerAmount;
   }
 
   /// @notice Lets a user accept a pending challenge and first verifies that the state is valid (users own enough
-  /// tokens, own the loot, etc). Executes the battle, determines the winner, and then transfers the earnings out.
+  /// tokens, own the loot, etc). Executes the battle, determines the winner, and updates balances
   /// Both challengerAddress & challengerLootId are used to find the ongoing challenge in _challenges.
   /// @param accepterLootID The address of the user in the challenge
   /// @param challengerAddress The address of the the challenger this user wants to fight
@@ -135,10 +141,6 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     uint256 challengerLootId
   ) external nonReentrant {
     require(_userOwnsLoot(_msgSender(), accepterLootID), "MUST_OWN_LOOT");
-    require(
-      _activeByLootIdMap[accepterLootID] != true,
-      "LOOT_MUST_NOT_BE_ACTIVE"
-    );
 
     // Find the challenge if it exists
     Challenge memory challenge;
@@ -165,10 +167,14 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     );
 
     // Run validation checks on person accepting the challenge
+    // TODO: compute based on odds here
     uint256 accepterWagerAmount = challenge.wagerAmount * 1;
     require(
-      _userHasWagerAmount(challenge.challengerAddress, accepterWagerAmount),
-      "MUST_OWN_ENOUGH_TOKENS"
+      _userHasSufficientBalance(
+        challenge.challengerAddress,
+        accepterWagerAmount
+      ),
+      "INSUFFICIENT_BALANCE"
     );
 
     uint256 winningLootId = _battle(challenge.lootId, accepterLootID);
@@ -197,15 +203,11 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     delete _activeByLootIdMap[challenge.lootId];
   }
 
-  function getOpenChallenges() external view returns (Challenge[] memory) {
-    return _challenges;
-  }
-
   /// @notice If a valid active challenge exists for the given sender and loot id, delete it.
   /// @param lootId The id of the loot the user wagered
   function deleteChallenge(uint256 lootId) external nonReentrant {
-    require(_userOwnsLoot(_msgSender(), lootId), "MUST_OWN_LOOT");
     require(_activeByLootIdMap[lootId] == true, "LOOT_MUST_BE_ACTIVE");
+    require(_userOwnsLoot(_msgSender(), lootId), "MUST_OWN_LOOT");
 
     // Find the challenge if it exists
     Challenge memory challenge;
@@ -235,14 +237,17 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     delete _activeByLootIdMap[lootId];
   }
 
-  /// @notice Deposit user wager amount. Note that we don't update balances unless
-  //  the user deletes challenge or a battle happens
-  function _escrowFunds(address wagerer, uint256 amount) internal {
-    agldContract.safeTransferFrom(wagerer, address(this), amount);
+  function getOpenChallenges() external view returns (Challenge[] memory) {
+    return _challenges;
   }
 
-  function _releaseFunds(address claimer, uint256 amount) internal {
-    require(_balances[claimer] >= amount);
+  function _depositFunds(address depositor, uint256 amount) internal {
+    agldContract.safeTransferFrom(depositor, address(this), amount);
+    _balances[depositor] += amount;
+  }
+
+  function _claimFunds(address claimer, uint256 amount) internal {
+    require(_userHasSufficientBalance(claimer, amount), "INSUFFICIENT_BALANCE");
     agldContract.safeTransferFrom(address(this), claimer, amount);
     _balances[claimer] -= amount;
   }
@@ -286,12 +291,12 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
 
   /// @notice Checks if the user wagering a certain amount of AGLD actually has enough to go through
   /// @param userAddress The address of the user in the challenge
-  /// @param wagerAmount The amount of AGLD tokens the user is wagering
-  function _userHasWagerAmount(address userAddress, uint256 wagerAmount)
+  /// @param amount The amount of AGLD tokens the user is wagering
+  function _userHasSufficientBalance(address userAddress, uint256 amount)
     internal
     view
     returns (bool)
   {
-    return agldContract.balanceOf(userAddress) >= wagerAmount;
+    return balanceOf(userAddress) >= amount;
   }
 }
