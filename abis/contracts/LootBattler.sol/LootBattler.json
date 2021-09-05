@@ -140,6 +140,36 @@
   },
   {
     "inputs": [],
+    "name": "getOpenChallenges",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "challengerAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "lootId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wagerAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LootBattler.Challenge[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "lootComponents",
     "outputs": [
       {

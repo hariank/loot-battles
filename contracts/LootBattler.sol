@@ -161,15 +161,7 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     // Run validation checks on original challenger again
     require(
       _userOwnsLoot(challenge.challengerAddress, challenge.lootId),
-      "MUST_OWN_LOOT"
-    );
-    require(
-      _userHasWagerAmount(challenge.challengerAddress, challenge.wagerAmount),
-      "CHALLENGER_MUST_OWN_ENOUGH_TOKENS"
-    );
-    require(
-      _activeByLootIdMap[challenge.lootId] != true,
-      "LOOT_MUST_NOT_BE_ACTIVE"
+      "CHALLENGER_MUST_OWN_LOOT"
     );
 
     // Run validation checks on person accepting the challenge
@@ -203,6 +195,10 @@ contract LootBattler is Context, Ownable, ReentrancyGuard {
     }
     _challenges.pop();
     delete _activeByLootIdMap[challenge.lootId];
+  }
+
+  function getOpenChallenges() external view returns (Challenge[] memory) {
+    return _challenges;
   }
 
   /// @notice If a valid active challenge exists for the given sender and loot id, delete it.
