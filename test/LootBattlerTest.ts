@@ -1,28 +1,19 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { BigNumber, Contract, Signer } from "ethers";
 import { ethers, network } from "hardhat";
 import * as constants from "../scripts/constants";
 import * as utils from "../scripts/utils";
-import { forknet } from "../hardhat.config";
 
-const LootABI = require("./test_abi/Loot.json");
-const ERC20ABI = require("./test_abi/ERC20.json");
-
-let LootBattler: Contract;
+const LootABI = require("../abis/contracts/Loot.sol/Loot.json");
 
 const ADDRESSES: Record<string, string> = {
-  // https://opensea.io/0x3fae7d59a245527fc09f2c274e18a3834e027708
-  OWNER_1: "0x3Fae7D59a245527Fc09F2c274E18A3834E027708",
-  // https://opensea.io/0x930af7923b8b5f8d3461ad1999ceeb8a62884b19
-  OWNER_2: "0x930af7923b8b5f8d3461ad1999ceeb8a62884b19",
-  // Loot contract
-  LOOT: "0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7",
+  LOOT_OWNER_1: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  LOOT_OWNER_2: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
   ZERO: "0x0000000000000000000000000000000000000000",
 };
-
 const TOKEN_IDS: Record<string, number> = {
-  LOOT_ONE: 5726,
-  LOOT_TWO: 3686,
+  LOOT_1: 1,
+  LOOT_2: 2,
 };
 
 async function impersonateSigner(account: string): Promise<Signer> {
@@ -36,54 +27,57 @@ async function impersonateSigner(account: string): Promise<Signer> {
   return await ethers.provider.getSigner(account);
 }
 
-async function deployBattler(): Promise<void> {
-  const c: Contract = await utils.deployContractFromCompiled(
+let Loot: Contract;
+let LootComponents: Contract;
+let AdventureGold: Contract;
+let LootBattler: Contract;
+
+async function mintLoot(
+  address: string,
+  lootAddress: string,
+  tokenId: number
+): Promise<void> {
+  const signer = await impersonateSigner(address);
+  await (
+    await utils.contractFromABI(lootAddress, LootABI, signer)
+  ).claim(tokenId);
+}
+
+async function deployAll(): Promise<void> {
+  Loot = await utils.deployContractFromCompiled("Loot");
+  LootComponents = await utils.deployContractFromCompiled("LootComponents");
+  AdventureGold = await utils.deployContractFromCompiled("MockAdventureGold");
+  LootBattler = await utils.deployContractFromCompiled(
     "LootBattler",
-    constants.LOOT_MAIN_ADDR,
-    constants.LOOT_COMPONENTS_ADDR,
-    constants.AGLD_ADDR
+    Loot.address,
+    LootComponents.address,
+    AdventureGold.address
   );
-
-  LootBattler = c;
-}
-
-function getAddress(c: Contract): string {
-  return c.address.toString();
-}
-
-async function approveCoin(amt: number): Promise<void> {
-  const signer = await impersonateSigner(ADDRESSES.OWNER_1);
-  const agld = await utils.contractFromABI(
-    constants.AGLD_ADDR,
-    ERC20ABI,
-    signer
-  );
-  await agld.approve(getAddress(LootBattler), amt);
 }
 
 describe("LootBattler", function () {
-  // Pre-setup
   beforeEach(async () => {
-    // Reset hardhat forknet
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [
-        {
-          forking: forknet(),
-        },
-      ],
-    });
+    // deploy all contracts
+    await deployAll();
 
-    // Deploy contract
-    await deployBattler();
+    // starter loot
+    await mintLoot(ADDRESSES.LOOT_OWNER_1, Loot.address, TOKEN_IDS.LOOT_1);
+    await mintLoot(ADDRESSES.LOOT_OWNER_2, Loot.address, TOKEN_IDS.LOOT_2);
   });
 
-  describe("AGLD balance", async () => {
-    beforeEach(async () => {});
+  it("initial loot", async function () {
+    assert.equal(
+      (await Loot.ownerOf(TOKEN_IDS.LOOT_1)).toLowerCase(),
+      ADDRESSES.LOOT_OWNER_1
+    );
+    assert.equal(
+      (await Loot.ownerOf(TOKEN_IDS.LOOT_2)).toLowerCase(),
+      ADDRESSES.LOOT_OWNER_2
+    );
+  });
 
-    it("initial winnings", async function () {
-      await approveCoin(10000);
-      await expect(LootBattler.balanceOf(ADDRESSES.OWNER_1)).equal(0);
-    });
+  it("initial battle balance", async function () {
+    assert.equal(await LootBattler.balanceOf(ADDRESSES.LOOT_OWNER_1), 0);
+    assert.equal(await LootBattler.balanceOf(ADDRESSES.LOOT_OWNER_2), 0);
   });
 });
